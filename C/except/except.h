@@ -33,20 +33,20 @@
  *
  *   try
  *   {
- *   	... program statements ...
+ *      ... program statements ...
  *
- *   	exThrow(exOther, NULL, "Something happened.");
+ *      exThrow(exOther, NULL, "Something happened.");
  *   }
  *   catch (e)
  *   {
- *   	switch(e->code)
- *   	{
- *   	default: ... process exception ...
- *   	}
+ *      switch(e->code)
+ *      {
+ *      default: ... process exception ...
+ *      }
  *
- *   	then either: exFree(e);
- *   	or: exRepeat(e);
- *   	or: exThrow(exOther, e, "Something else happened.");
+ *      then either: exFree(e);
+ *      or: exThrow(exOther, e, "Something happened.");
+ *      or: exRethrow(e);
  *   }
  *
  *   exDeinit();
@@ -58,6 +58,9 @@
  * - A single catch block is expected.
  *
  * - There is no finally block and there will probably never be.
+ *
+ * - The parentheses around a try block are optional, even with 2 or more
+ *   statements.
  *
  * - Do NOT return from within a try block, otherwise resources will be leaked.
  *
@@ -75,7 +78,7 @@
  * - While the implementation is thread-safe in the sense that the API is
  *   reentrant so you can safely throw and catch exceptions on different
  *   threads, you can still wreck quite a bit of havoc by doing illogical
- *   things or disregarding the API rules. Some examples of non-sense are:
+ *   things or disregarding the API rules. Some examples of nonsense are:
  *   throwing an already freed exception; freeing an exception currently
  *   being thrown on another thread; throwing an exception which is
  *   currently being thrown on another thread.
@@ -92,27 +95,28 @@
 
 typedef enum
 {
-	/* Extend with additional codes. */
-	exOther
+    /* Extend with additional codes. */
+    exOther
 } ExceptionCode;
 
 typedef struct _Exception
 {
-	ExceptionCode code;
-	char msg[MAX_MSG_LEN];
-	struct _Exception * const cause;
+    ExceptionCode code;
+    char msg[MAX_MSG_LEN];
+    struct _Exception* const cause;
 } Exception;
 
-#define try								\
-	if (!setjmp(*pushCallingEnv())) {
+#define try                             \
+    if (!setjmp(*pushCallingEnv()))     \
+    {
 
-#define catch(e)						\
-		popCallingEnv(NULL);			\
-	}									\
-	else if (popCallingEnv(&e), 1)
+#define catch(e)                        \
+        popCallingEnv(NULL);            \
+    }                                   \
+    else if (popCallingEnv(&e), 1)
 
 /** Not part of the API, do not use. */
-jmp_buf *pushCallingEnv();
+jmp_buf* pushCallingEnv();
 
 /** Not part of the API, do not use. */
 void popCallingEnv(Exception **e);
@@ -121,7 +125,7 @@ void exInit();
 void exDeinit();
 Exception* exAlloc(ExceptionCode code, Exception *cause, const char *msg, ...);
 void exThrow(ExceptionCode code, Exception *cause, const char *msg, ...);
-void exRepeat(Exception *e);
+void exRethrow(Exception *e);
 void exFree(Exception *e);
 
 #endif // __EXCEPT_H__

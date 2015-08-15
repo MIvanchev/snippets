@@ -1,0 +1,11 @@
+--style=allman
+--indent=spaces=4
+--attach-extern-c
+--indent-preproc-define
+--min-conditional-indent=0
+--pad-oper
+--pad-header
+--remove-brackets
+--convert-tabs
+--max-code-length=80
+--lineend=linux
