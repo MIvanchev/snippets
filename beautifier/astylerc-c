@@ -7,5 +7,7 @@
 --pad-header
 --remove-brackets
 --convert-tabs
+--indent-preproc-define
 --max-code-length=80
 --lineend=linux
+--max-instatement-indent=60
