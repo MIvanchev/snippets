@@ -1,0 +1,49 @@
+npp_console -
+
+npp_switch $(ARGV[2])
+
+// Holds the path to a temporary file with the source to be formatted
+set local FILE = $(SYS.TEMP)\$(FILE_NAME)
+
+// Holds the path to a temporary file with the stderr output of the command
+set local ERRLOG = $(SYS.TEMP)\output.err
+
+// Holds the path to Uncrustify's config file.
+set local CFG =
+
+sci_sendmsg SCI_GETCURRENTPOS
+set local POS = $(MSG_RESULT)
+sci_sendmsg SCI_GETFIRSTVISIBLELINE
+set local FIRST_LINE = $(MSG_RESULT)
+sci_sendmsg SCI_GETXOFFSET
+set local X_OFFSET = $(MSG_RESULT)
+sci_sendmsg SCI_SELECTALL
+sel_saveto $(FILE)
+
+cmd /c uncrustify -f $(FILE) -o $(FILE) -c $(CFG) 2> $(ERRLOG)
+
+if $(EXITCODE) != 0 goto error
+
+npp_switch $(ARGV[])
+sci_sendmsg SCI_SELECTALL
+sel_loadfrom $(FILE)
+sci_sendmsg SCI_GOTOPOS $(POS)
+sci_sendmsg SCI_SETXOFFSET $(X_OFFSET)
+sci_sendmsg SCI_SETFIRSTVISIBLELINE $(FIRST_LINE)
+
+goto done
+
+:error
+
+sci_sendmsg SCI_GOTOPOS $(POS)
+con_color FG=FF0000 BG=FFFFFF
+npp_console on
+npp_console +
+echo Failed to format source file $(FILE)
+con_loadfrom $(ERRLOG)
+npp_console -
+con_color reset
+
+:done
+
+npp_console +
