@@ -8,8 +8,11 @@ set local FILE = $(SYS.TEMP)\$(FILE_NAME)
 // Holds the path to a temporary file with the stderr output of the command
 set local ERRLOG = $(SYS.TEMP)\output.err
 
-// Holds the path to Uncrustify's config file.
-set local CFG =
+// Holds the path to the C and C++ config for Uncrustify.
+set local UNCRUSTIFY_CFG =
+
+// Holds the path to the google-java-format tool.
+set local GOOGLE_JAVA_FORMAT =
 
 sci_sendmsg SCI_GETCURRENTPOS
 set local POS = $(MSG_RESULT)
@@ -20,7 +23,32 @@ set local X_OFFSET = $(MSG_RESULT)
 sci_sendmsg SCI_SELECTALL
 sel_saveto $(FILE)
 
-cmd /c uncrustify -f $(FILE) -o $(FILE) -c $(CFG) 2> $(ERRLOG)
+set local EXT ~ strlower $(EXT_PART)
+
+if $(EXT) == .c goto format_c
+if $(EXT) == .h goto format_c
+if $(EXT) == .cpp goto format_cpp
+if $(EXT) == .hpp goto format_cpp
+if $(EXT) == .java goto format_java
+if $(EXT) == .py goto format_python
+
+cmd /c echo "Unsupported extension: $(EXT)" > $(ERRLOG)
+goto error
+
+:format_c
+:format_cpp
+cmd /c uncrustify -f $(FILE) -o $(FILE) -c $(UNCRUSTIFY_CFG) 2> $(ERRLOG)
+goto validate
+
+:format_java
+cmd /c java -jar $(GOOGLE_JAVA_FORMAT) -r $(FILE) 2> $(ERRLOG)
+goto validate
+
+:format_python
+cmd /c yapf --in-place $(FILE) 2> $(ERRLOG)
+goto validate
+
+:validate
 
 if $(EXITCODE) != 0 goto error
 
