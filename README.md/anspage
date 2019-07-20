@@ -1,0 +1,70 @@
+# snippets
+Miscellaneous useful snippets for various programming languages
+От bb486af9ea2650f93fd1b1403d91dfa68d757b0d Пон Сеп 17 00:00:00 2001
+От: Marcin Wrzyciel <marcin.wrzyciel@possible.com>
+Дата: Fri, 25 Jul 2014 16:29:35 +0200
+Тема: [PATCH] При използване на символен низ за търсене / допълнителна пътека
+
+---
+ src / NotFoundPageAttribute.cs | 39 +++++++++++++++++++++++ -------------
+ 1 променен файл, 25 вмъквания (+), 14 заличавания (-)
+
+diff - затвори / src / NotFoundPageAttribute.cs b / src / NotFoundPageAttribute.cs
+индекс 1e69c8f..68a98d8 100644
+--- a / src / NotFoundPageAttribute.cs
++++ b / src / NotFoundPageAttribute.cs
+@@ -26,28 +26,39 @@ публично заглушаване void OnActionExecuting (ActionExecutingContext filterContext)
+ 
+             CustomRedirectHandler current = CustomRedirectHandler.Current;
+             CustomRedirect redirect = current.CustomRedirects.Find (HttpUtility.HtmlEncode (urlNotFound.AbsoluteUri));
+- string oldUrl = HttpUtility.HtmlEncode (urlNotFound.PathAndQuery);
+ 
++ string oldUrl = HttpUtility.HtmlEncode (urlNotFound.LocalPath);
+             ако (пренасочи == null)
+                 redirect = current.CustomRedirects.Find (oldUrl);
+ 
+- ако (пренасочва се! = null)
++ if (пренасочване == null)
+             {
+- if (redirect.State.Equals (0) && (string.Compare (redirect.NewUrl, oldUrl, StringComparison.InvariantCultureIgnoreCase)! = 0))
+- {
+- Log.Info (string.Format ("404 Custom Redirect: To: '{0}' (от: '{1}')", redirect.NewUrl, oldUrl));
+- filterContext.Result = new RedirectResult (redirect.NewUrl, true);
+- връщане;
+-}
++ if ((Configuration.Configuration.Logging == LoggerMode.On) && Upgrader.Valid)
++ Logger.LogRequest (oldUrl, referer);
++
++ filterContext.HttpContext.Response.TrySkipIisCustomErrors = true;
++ filterContext.HttpContext.Response.StatusCode = 0x194;
++ filterContext.HttpContext.Response.Status = "404 Файлът не е намерен";
+             }
+- иначе, ако ((Configuration.Configuration.Logging == LoggerMode.On) && Upgrader.Valid)
++ else // намерено пренасочване
+             {
+- Logger.LogRequest (oldUrl, referer);
+-}
++ string newurl = redirect.NewUrl;
++ if (redirect.WildCardSkipAppend) // ако е заменен, заменете „старата част“ на URL адреса
++ {
++ newurl = urlNotFound.LocalPath.Replace (redirect.OldUrl, redirect.NewUrl);
++}
++
++ // винаги добавяте querystring
++ newurl + = urlNotFound.Query;
+ 
+- filterContext.HttpContext.Response.TrySkipIisCustomErrors = true;
+- filterContext.HttpContext.Response.StatusCode = 0x194;
+- filterContext.HttpContext.Response.Status = "404 Файлът не е намерен";
++ if (redirect.State.Equals (0) && (string.Compare (newurl, oldUrl, StringComparison.InvariantCultureIgnoreCase)! = 0))
++ {
++ Log.Info (string.Format ("404 Custom Redirect: To: '{0}' (от: '{1}')", newurl, oldUrl));
++                    
++ filterContext.Result = new RedirectResult (newurl, true);
++}
++}
+         }
++
+     }
+ }
+Няма нов ред в края на файла
